@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>像素格斗</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <canvas id="game" width="1600" height="900"></canvas>
+
+  <!-- ================= 战斗 HUD ================= -->
+  <div id="hud" class="hidden">
+    <div class="hud-side p1">
+      <div class="portrait"><img id="p1-portrait" alt=""></div>
+      <div class="meta">
+        <div class="row"><span class="name" id="p1-name">大狗</span><span class="tag" id="p1-tag">拳犬</span></div>
+        <div class="bar hp"><div class="hp-lag" id="p1-hp-lag"></div><div class="hp-fill" id="p1-hp"></div></div>
+        <div class="bar rage"><div class="rage-fill" id="p1-rage"></div><i class="tick t50"></i><i class="tick t100"></i><span class="rage-num" id="p1-rage-num">0</span></div>
+      </div>
+    </div>
+
+    <div class="hud-side p2">
+      <div class="portrait"><img id="p2-portrait" alt=""></div>
+      <div class="meta">
+        <div class="row"><span class="tag" id="p2-tag">拳犬</span><span class="name" id="p2-name">大狗</span></div>
+        <div class="bar hp"><div class="hp-lag" id="p2-hp-lag"></div><div class="hp-fill" id="p2-hp"></div></div>
+        <div class="bar rage"><div class="rage-fill" id="p2-rage"></div><i class="tick t50"></i><i class="tick t100"></i><span class="rage-num" id="p2-rage-num">0</span></div>
+      </div>
+    </div>
+
+    <div id="timer"><span id="timer-num">99</span></div>
+    <div id="stage-tag" class="hidden"></div>
+    <div id="combo-p1" class="combo"></div>
+    <div id="combo-p2" class="combo"></div>
+    <div id="hud-btns">
+      <button id="btn-mute" class="hud-btn" title="静音 (M)">♪</button>
+      <button id="btn-help" class="hud-btn" title="招式表 (H)">?</button>
+      <button id="btn-pause" class="hud-btn" title="暂停 (ESC)">II</button>
+    </div>
+  </div>
+
+  <div id="announce"><div class="a-title"></div><div class="a-sub"></div></div>
+  <div id="cinema"><i class="cinema-top"></i><i class="cinema-bot"></i></div>
+
+  <!-- ================= 标题 ================= -->
+  <div id="screen-title" class="screen">
+    <div class="title-wrap">
+      <div class="kicker">6 FIGHTERS · 1 ARENA</div>
+      <h1 class="logo">像素<span>格斗</span></h1>
+      <div class="logo-sub">PIXEL FIGHT</div>
+      <div class="menu">
+        <button class="btn ghost hidden" id="btn-continue">继续无尽</button>
+        <button class="btn primary" id="btn-arcade">闯关模式</button>
+        <button class="btn" id="btn-training">训练模式</button>
+        <button class="btn" id="btn-versus">双人对打</button>
+        <button class="btn ghost" id="btn-moves">招式表</button>
+      </div>
+      <div class="record" id="record-line">闯关记录：暂无</div>
+    </div>
+    <div class="title-chars">
+      <img src="assets/characters/dog/images/px.png" alt="" style="--i:0">
+      <img src="assets/characters/whalie/images/px.png" alt="" style="--i:1">
+      <img src="assets/characters/frost/images/title.png" alt="" class="art" style="--i:2">
+      <img src="assets/characters/hopper/images/px.png" alt="" style="--i:3">
+      <img src="assets/characters/naiwa/images/px.png" alt="" style="--i:4">
+      <img src="assets/characters/spade/images/px.png" alt="" style="--i:5">
+    </div>
+    <div class="title-hint">
+      <span><kbd>A</kbd><kbd>D</kbd>移动</span>
+      <span><kbd>W</kbd>跳跃</span>
+      <span><kbd>S</kbd>防御</span>
+      <span><kbd>J</kbd>挥拳</span>
+      <span><kbd>K</kbd>踢腿</span>
+      <span><kbd>L</kbd>闪避</span>
+      <span><kbd>S</kbd><kbd>L</kbd>幻影闪避</span>
+      <span><kbd>U</kbd><kbd>I</kbd><kbd>O</kbd>技能1/2/3</span>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 选人 ================= -->
+  <div id="screen-select" class="screen hidden">
+    <div class="select-head">
+      <div class="head-left">
+        <button class="btn ghost back" id="btn-select-back">← 返回</button>
+        <div>
+          <div class="kicker" id="select-kicker">SELECT YOUR FIGHTER</div>
+          <h2 id="select-title">选择你的斗士</h2>
+        </div>
+      </div>
+      <div class="select-side"><span id="side-label">CPU 对手：</span><b id="cpu-name">随机</b></div>
+    </div>
+    <div class="foe-strip hidden" id="foe-strip">
+      <span class="foe-label" id="foe-label">对手</span>
+      <div class="foe-chips" id="foe-chips"></div>
+    </div>
+    <div class="select-body">
+      <div class="card-grid" id="card-grid"></div>
+      <aside class="preview" id="preview">
+        <div class="pv-portrait"><img id="pv-img" alt=""></div>
+        <div class="pv-name"><span id="pv-name">大狗</span><i id="pv-en">BIG BARK</i></div>
+        <div class="pv-tag" id="pv-tag">拳犬 · 金毛霸</div>
+        <p class="pv-bio" id="pv-bio"></p>
+        <p class="pv-note" id="pv-note">体力 · 速度 · 跳跃 六名斗士完全一致<br>差异只在技能与攻击动作</p>
+        <div class="pv-skills" id="pv-skills"></div>
+        <button class="btn primary wide" id="btn-fight">进入战斗 →</button>
+      </aside>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 结算 ================= -->
+  <div id="screen-result" class="screen hidden">
+    <div class="result-box">
+      <div class="kicker" id="result-kicker">K.O.</div>
+      <h2 id="result-winner">大狗 WINS</h2>
+      <div class="result-sub" id="result-sub"></div>
+      <div class="result-extra" id="result-extra"></div>
+      <div class="result-actions">
+        <button class="btn primary" id="btn-rematch">再战一场</button>
+        <button class="btn" id="btn-select">更换角色</button>
+        <button class="btn ghost" id="btn-home">回到标题</button>
+      </div>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 暂停 ================= -->
+  <div id="screen-pause" class="screen hidden">
+    <div class="result-box small">
+      <div class="kicker">PAUSED</div>
+      <h2>暂停</h2>
+      <div class="result-actions col">
+        <button class="btn primary" id="btn-resume">继续战斗</button>
+        <button class="btn" id="btn-pause-restart">重新开始</button>
+        <button class="btn ghost" id="btn-pause-home">回到标题</button>
+      </div>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 无尽中途退出 ================= -->
+  <div id="screen-quit" class="screen hidden">
+    <div class="result-box small">
+      <div class="kicker">ENDLESS</div>
+      <h2>是否保存进度？</h2>
+      <div class="result-sub" id="quit-sub">保存后可在标题页继续挑战</div>
+      <div class="result-actions col">
+        <button class="btn primary" id="btn-quit-save">存档并退出</button>
+        <button class="btn" id="btn-quit-discard">不存档退出</button>
+        <button class="btn ghost" id="btn-quit-cancel">取消</button>
+      </div>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 招式表 ================= -->
+  <div id="screen-help" class="screen hidden">
+    <div class="help-box">
+      <div class="kicker">COMMAND LIST</div>
+      <h2>招式表</h2>
+      <div class="help-grid">
+        <div class="help-row"><kbd>A</kbd><kbd>D</kbd><span>左右移动 · <b>双击疾步</b>（瞬步，疾步中 J / K 使出瞬步拳 / 瞬步踢，伤害 ×1.2）</span></div>
+        <div class="help-row"><kbd>W</kbd><span>跳跃</span></div>
+        <div class="help-row"><kbd>S</kbd><span>防御（减伤 84%，被打也涨怒气）</span></div>
+        <div class="help-row"><kbd>J</kbd><kbd>J</kbd><kbd>J</kbd><span>三连拳：末段上勾<b>浮空</b>对手</span></div>
+        <div class="help-row"><kbd>K</kbd><span>踢腿 · 连段中按 K 直接重踢收尾</span></div>
+        <div class="help-row"><kbd>W</kbd><span>浮空命中后立刻按 W：<b>跳跃取消</b>，起跳追击</span></div>
+        <div class="help-row"><kbd>L</kbd><span>闪避：朝<b>当前面向</b>翻滚，有短暂无敌（不消耗怒气）· 跳跃在空中也能闪避一次</span></div>
+        <div class="help-row"><kbd>A</kbd><kbd>L</kbd><span>向左闪避 · <kbd>D</kbd><kbd>L</kbd>向右闪避</span></div>
+        <div class="help-row"><kbd>S</kbd><kbd>L</kbd><span>幻影闪避（消耗 50 怒气·<b>无敌帧更长</b>·被连击时也能脱身）</span></div>
+        <div class="help-row"><kbd>W</kbd><kbd>J</kbd><span>空中追击 · 跳拳</span></div>
+        <div class="help-row"><kbd>W</kbd><kbd>K</kbd><span>空中追击 · 跳踢</span></div>
+        <div class="help-row"><kbd>U</kbd><span>技能1（不消耗怒气）· 连段命中后可直接取消进技能</span></div>
+        <div class="help-row"><kbd>I</kbd><span>技能2（消耗 50 怒气）· 连段命中后可直接取消进技能</span></div>
+        <div class="help-row"><kbd>O</kbd><span>必杀 O（消耗 100 怒气·<b>整段无敌</b>·放完后有 0.3 秒后摇，会被反打·霜龙 / 奶娃 / 小鲸 / 大狗 / 黑桃 / 跳跳已开放）</span></div>
+      </div>
+      <div class="help-note">
+        <b>怒气</b>上限 100：拳脚命中 +8 ／ 被拳脚命中 +10 ／ 防御成功 +12。技能 U 释放 +5、每段命中 +5；I 放完返 5、命中 +10；O 放完返 10、命中 +20（I / O 不管几段都只按一次结算，被技能命中同样按 5／10／20 获得）。技能释放瞬间附带无敌帧。<br>
+        <b>连段衰减</b>：挥拳 / 踢腿与 U 技能每连击一次伤害 -5%，最多衰减 25%（最低 75%）；I 技能与 O 必杀为固定伤害，不受连击衰减影响。
+      </div>
+      <div class="help-note">
+        <b>双人对打 · 玩家2</b>：<kbd>↑</kbd>跳跃 <kbd>↓</kbd>防御 <kbd>←</kbd><kbd>→</kbd>移动 · 小键盘 <kbd>1</kbd>挥拳 <kbd>2</kbd>踢腿 <kbd>3</kbd>闪避 <kbd>4</kbd>技能1 <kbd>5</kbd>技能2 <kbd>6</kbd>技能3<br>
+        <b>玩家1</b>：<kbd>W</kbd>跳跃 <kbd>S</kbd>防御 <kbd>A</kbd><kbd>D</kbd>移动 · <kbd>J</kbd>挥拳 <kbd>K</kbd>踢腿 <kbd>L</kbd>闪避 <kbd>U</kbd><kbd>I</kbd><kbd>O</kbd>技能1/2/3
+      </div>
+      <button class="btn primary" id="btn-help-close">知道了</button>
+    </div>
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- ================= 加载 ================= -->
+  <div id="loading">
+    <div class="load-dog">像素格斗</div>
+    <div class="load-bar"><i id="load-fill"></i></div>
+    <div class="load-txt" id="load-txt">LOADING…</div>
+  </div>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/pose-data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/whaletail.js"></script>
+<script src="js/fighter.js"></script>
+<script src="js/game-ai.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
